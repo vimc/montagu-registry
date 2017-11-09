@@ -30,11 +30,12 @@ else
     exit 1
 fi
 
-VAULT_ADDR='https://support.montagu.dide.ic.ac.uk:8200'
+export VAULT_ADDR='https://support.montagu.dide.ic.ac.uk:8200'
 if [ -z $VAULT_AUTH_GITHUB_TOKEN ]; then
     echo -n "Paste your github token: "
     read -s VAULT_AUTH_GITHUB_TOKEN
 fi
+export VAULT_AUTH_GITHUB_TOKEN
 
 if [ ! -f $PATH_CRT ]; then
     cat certs/${REGISTRY_DOMAIN}.crt \
