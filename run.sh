@@ -40,24 +40,21 @@ if [ -z $VAULT_AUTH_GITHUB_TOKEN ]; then
 fi
 export VAULT_AUTH_GITHUB_TOKEN
 
-if [ ! -f $PATH_CRT ]; then
-    cat certs/${REGISTRY_DOMAIN}.crt \
-        certs/QuoVadisOVIntermediateCertificate.crt > \
-        ${PATH_CRT}
-fi
+cat certs/${REGISTRY_DOMAIN}.crt \
+    certs/QuoVadisOVIntermediateCertificate.crt > \
+    ${PATH_CRT}
 
-if [ ! -f $PATH_KEY ]; then
-    echo "Reading ssl key"
-    vault auth -method=github
-    vault read -field=key /secret/ssl/registry > $PATH_KEY
-    chmod 600 $PATH_KEY
-fi
+echo "Reading ssl key"
+vault auth -method=github
+vault read -field=key /secret/ssl/registry > $PATH_KEY
+chmod 600 $PATH_KEY
 
 echo "Setting up password for registry user ${REGISTRY_USER}"
 REGISTRY_PASSWORD=$(vault read -field=password $REGISTRY_PASSWORD_PATH)
 mkdir -p auth
 docker run --rm --entrypoint htpasswd registry:2 \
        -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > $PATH_AUTH
+chmod 600 $PATH_AUTH
 
 echo "Starting docker registry"
 docker run \
