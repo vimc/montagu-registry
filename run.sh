@@ -17,6 +17,7 @@ RUNNING=$(docker inspect --format="{{.State.Running}}" $REGISTRY_CONTAINER 2> \
                  /dev/null)
 
 REGISTRY_USER=vimc
+REGISTRY_PASSWORD_PATH=/secret/registry/${REGISTRY_USER}
 
 if [[ "$RUNNING" == "true" ]]; then
     echo "Registry already running"
@@ -54,14 +55,11 @@ if [ ! -f $PATH_KEY ]; then
     chmod 600 $PATH_KEY
 fi
 
-if [ ! -f $PATH_AUTH ]; then
-    echo "Setting up password for registry user ${REGISTRY_USER}"
-    REGISTRY_PASSWORD=$(vault read -field=password /secret/registry/${REGISTRY_USER})
-    REGISTRY_PASSWORD=changeme
-    mkdir -p auth
-    docker run --rm --entrypoint htpasswd registry:2 \
-           -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > $PATH_AUTH
-fi
+echo "Setting up password for registry user ${REGISTRY_USER}"
+REGISTRY_PASSWORD=$(vault read -field=password $REGISTRY_PASSWORD_PATH)
+mkdir -p auth
+docker run --rm --entrypoint htpasswd registry:2 \
+       -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > $PATH_AUTH
 
 echo "Starting docker registry"
 docker run \
