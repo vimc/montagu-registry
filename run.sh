@@ -9,6 +9,7 @@ REGISTRY_DOMAIN=docker.support.montagu.dide.ic.ac.uk
 VAULT_ADDR=https://support.montagu.dide.ic.ac.uk:8200
 PATH_CRT=certs/domain.crt
 PATH_KEY=certs/domain.key
+PATH_AUTH=auth/htpasswd
 
 RUNNING=$(docker inspect --format="{{.State.Running}}" $REGISTRY_CONTAINER 2> \
                  /dev/null)
@@ -18,6 +19,15 @@ REGISTRY_USER=vimc
 if [[ "$RUNNING" == "true" ]]; then
     echo "Registry already running"
     exit 0
+fi
+
+docker volume inspect $REGISTRY_VOLUME_NAME 2> /dev/null > /dev/null
+VOLUME_EXISTS=$?
+if [ $VOLUME_EXISTS -eq 0 ]; then
+    echo "Found docker volume"
+else
+    echo "The docker volume $REGISTRY_VOLUME_NAME must exist"
+    exit 1
 fi
 
 if [ ! -f $PATH_CRT ]; then
@@ -33,19 +43,12 @@ if [ ! -f $PATH_KEY ]; then
     chmod 600 $PATH_KEY
 fi
 
-echo "Setting up password for registry user ${REGISTRY_USER}"
-REGISTRY_PASSWORD=$(vault read -field=password /secret/registry/${REGISTRY_USER})
-mkdir -p auth
-docker run --rm --entrypoint htpasswd registry:2 \
-       -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > auth/htpasswd
-
-docker volume inspect $REGISTRY_VOLUME_NAME 2> /dev/null > /dev/null
-VOLUME_EXISTS=$?
-if [ $VOLUME_EXISTS -eq 0 ]; then
-    echo "Found docker volume"
-else
-    echo "The docker volume $REGISTRY_VOLUME_NAME must exist"
-    exit 1
+if [ ! -f $PATH_AUTH ]; then
+    echo "Setting up password for registry user ${REGISTRY_USER}"
+    REGISTRY_PASSWORD=$(vault read -field=password /secret/registry/${REGISTRY_USER})
+    mkdir -p auth
+    docker run --rm --entrypoint htpasswd registry:2 \
+           -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > $PATH_AUTH
 fi
 
 echo "Starting docker registry"
@@ -60,6 +63,6 @@ docker run \
        -v `pwd`/auth:/auth \
        -e REGISTRY_AUTH=htpasswd \
        -e REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" \
-       -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
+       -e REGISTRY_AUTH_HTPASSWD_PATH=/$PATH_AUTH \
        registry:2
 exit $?
