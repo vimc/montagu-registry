@@ -18,9 +18,11 @@ if [[ "$RUNNING" == "true" ]]; then
     exit 0
 fi
 
-cat certs/${REGISTRY_DOMAIN}.crt \
-    certs/QuoVadisOVIntermediateCertificate.crt > \
-    ${PATH_CRT}
+if [ ! -f $PATH_CRT ]; then
+    cat certs/${REGISTRY_DOMAIN}.crt \
+        certs/QuoVadisOVIntermediateCertificate.crt > \
+        ${PATH_CRT}
+fi
 
 if [ ! -f $PATH_KEY ]; then
     echo "Reading ssl key"
