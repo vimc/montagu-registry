@@ -13,6 +13,8 @@ PATH_KEY=certs/domain.key
 RUNNING=$(docker inspect --format="{{.State.Running}}" $REGISTRY_CONTAINER 2> \
                  /dev/null)
 
+REGISTRY_USER=vimc
+
 if [[ "$RUNNING" == "true" ]]; then
     echo "Registry already running"
     exit 0
@@ -31,6 +33,12 @@ if [ ! -f $PATH_KEY ]; then
     chmod 600 $PATH_KEY
 fi
 
+echo "Setting up password for registry user ${REGISTRY_USER}"
+REGISTRY_PASSWORD=$(vault read -field=password /secret/registry/${REGISTRY_USER})
+mkdir -p auth
+docker run --rm --entrypoint htpasswd registry:2 \
+       -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > auth/htpasswd
+
 docker volume inspect $REGISTRY_VOLUME_NAME 2> /dev/null > /dev/null
 VOLUME_EXISTS=$?
 if [ $VOLUME_EXISTS -eq 0 ]; then
@@ -45,9 +53,13 @@ docker run \
        --name $REGISTRY_CONTAINER \
        -d --restart=always \
        -p ${REGISTRY_PORT}:5000 \
-       -v `pwd`/certs:/certs \
        -v $REGISTRY_VOLUME_NAME:/var/lib/registry \
+       -v `pwd`/certs:/certs \
        -e REGISTRY_HTTP_TLS_CERTIFICATE=/$PATH_CRT \
        -e REGISTRY_HTTP_TLS_KEY=/$PATH_KEY \
+       -v `pwd`/auth:/auth \
+       -e REGISTRY_AUTH=htpasswd \
+       -e REGISTRY_AUTH_HTPASSWD_REALM="Registry Realm" \
+       -e REGISTRY_AUTH_HTPASSWD_PATH=/auth/htpasswd \
        registry:2
 exit $?
