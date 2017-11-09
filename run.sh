@@ -1,10 +1,8 @@
 #!/usr/bin/env bash
 
-set -x
-
-REGISTRY_PORT=5001
-REGISTRY_CONTAINER=registry2
-REGISTRY_VOLUME_NAME=registry_data2
+REGISTRY_PORT=500
+REGISTRY_CONTAINER=registry
+REGISTRY_VOLUME_NAME=registry_data
 REGISTRY_DOMAIN=docker.support.montagu.dide.ic.ac.uk
 
 ## These should not be changed
