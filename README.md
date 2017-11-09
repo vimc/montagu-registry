@@ -8,7 +8,13 @@
 
 ## Deployment:
 
+From within this directory, run:
+
+```
 ./run.sh
+```
+
+The script will pull the ssl certificate and password from the vault.  If you update either then relaunch the registry and the changes will take effect.
 
 ## Login
 
