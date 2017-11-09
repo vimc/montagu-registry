@@ -30,6 +30,13 @@ With the password from
 vault read -field=password /secret/registry/vimc
 ```
 
+which can be done all in one with
+
+```
+vault read -field=password /secret/registry/vimc | \
+    docker login -u vimc --password-stdin docker.montagu.dide.ic.ac.uk:5000
+```
+
 ## Did it work?
 
 ```
