@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -x
+
 REGISTRY_PORT=5001
 REGISTRY_CONTAINER=registry2
 REGISTRY_VOLUME_NAME=registry_data2
@@ -29,6 +31,8 @@ else
     echo "The docker volume $REGISTRY_VOLUME_NAME must exist"
     exit 1
 fi
+
+set -e
 
 export VAULT_ADDR='https://support.montagu.dide.ic.ac.uk:8200'
 if [ -z $VAULT_AUTH_GITHUB_TOKEN ]; then
