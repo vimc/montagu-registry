@@ -57,6 +57,7 @@ fi
 if [ ! -f $PATH_AUTH ]; then
     echo "Setting up password for registry user ${REGISTRY_USER}"
     REGISTRY_PASSWORD=$(vault read -field=password /secret/registry/${REGISTRY_USER})
+    REGISTRY_PASSWORD=changeme
     mkdir -p auth
     docker run --rm --entrypoint htpasswd registry:2 \
            -Bbn $REGISTRY_USER $REGISTRY_PASSWORD > $PATH_AUTH
