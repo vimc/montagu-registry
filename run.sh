@@ -30,6 +30,12 @@ else
     exit 1
 fi
 
+VAULT_ADDR='https://support.montagu.dide.ic.ac.uk:8200'
+if [ -z $VAULT_AUTH_GITHUB_TOKEN ]; then
+    echo -n "Paste your github token: "
+    read -s VAULT_AUTH_GITHUB_TOKEN
+fi
+
 if [ ! -f $PATH_CRT ]; then
     cat certs/${REGISTRY_DOMAIN}.crt \
         certs/QuoVadisOVIntermediateCertificate.crt > \
