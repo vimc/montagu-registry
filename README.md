@@ -12,8 +12,10 @@
 
 ## Login
 
+Login has no expiry, so just needs running once
+
 ```
-docker login -p $(vault read -field=password /secret/registry/vimc) \
+docker login -u vimc -p $(vault read -field=password /secret/registry/users/vimc) \
     docker.montagu.dide.ic.ac.uk:5000
 ```
 
@@ -25,3 +27,40 @@ docker tag postgres docker.montagu.dide.ic.ac.uk:5000/postgres
 docker push docker.montagu.dide.ic.ac.uk:5000/postgres
 docker pull docker.montagu.dide.ic.ac.uk:5000/postgres
 ```
+
+docker tag postgres localhost:5000/postgres
+docker push localhost:5000/postgres
+docker pull localhost:5000/postgres
+
+
+## Requesting a new tls certificate
+
+```
+vault write secret/registry/challenge password=$(pwgen 20 1)
+```
+
+Then run
+
+```
+openssl genrsa -out data.key 2048
+openssl req -new -sha256 -key data.key -out cert.csr
+```
+
+With answers:
+
+* `Country Name`: GB
+* `State or Province Name`: London
+* `Locality Name`: London
+* `Organization Name`: Imperial College, London
+* `Organizational Unit Name`: Dept of Infectious Disease Epidemiology
+* `Common Name`: docker.montagu.dide.ic.ac.uk
+* `Email Address`: dide-it@imperial.ac.uk
+* `Challenge Password`: `vault read -field=password secret/registry/challenge`
+* `Optional company name`: (leave blank)
+
+Then file a request with imperial ICT at https://imperial.service-now.com/requests.do
+
+Previous requests were logged with
+
+* SR0468436
+* SR0513015 (VIMC-969)
