@@ -15,8 +15,13 @@
 Login has no expiry, so just needs running once
 
 ```
-docker login -u vimc -p $(vault read -field=password /secret/registry/users/vimc) \
-    docker.montagu.dide.ic.ac.uk:5000
+docker login -u vimc docker.montagu.dide.ic.ac.uk:5000
+```
+
+With the password from
+
+```
+vault read -field=password /secret/registry/vimc
 ```
 
 ## Did it work?
@@ -27,11 +32,6 @@ docker tag postgres docker.montagu.dide.ic.ac.uk:5000/postgres
 docker push docker.montagu.dide.ic.ac.uk:5000/postgres
 docker pull docker.montagu.dide.ic.ac.uk:5000/postgres
 ```
-
-docker tag postgres localhost:5000/postgres
-docker push localhost:5000/postgres
-docker pull localhost:5000/postgres
-
 
 ## Requesting a new tls certificate
 
