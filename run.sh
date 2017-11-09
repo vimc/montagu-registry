@@ -3,7 +3,7 @@
 REGISTRY_PORT=500
 REGISTRY_CONTAINER=registry
 REGISTRY_VOLUME_NAME=registry_data
-REGISTRY_DOMAIN=docker.support.montagu.dide.ic.ac.uk
+REGISTRY_DOMAIN=docker.montagu.dide.ic.ac.uk
 
 ## These should not be changed
 VAULT_ADDR=https://support.montagu.dide.ic.ac.uk:8200
