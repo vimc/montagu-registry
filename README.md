@@ -66,6 +66,22 @@ With answers:
 
 Then file a request with imperial ICT at https://imperial.service-now.com/requests.do
 
+They'll email back a zip file with files
+
+* `QuoVadisOVIntermediateCertificate.crt`
+* `QuoVadisOVRootCertificate.crt`
+* `docker.montagu.dide.ic.ac.uk.crt`
+
+along with the csr as provided.  Copy these into the `cert/` directory, overwriting as needed.
+
+Write the key into the vault
+
+```
+vault write /secret/ssl/registry key=@data.key
+```
+
+Redeploy the vaule
+
 Previous requests were logged with
 
 * SR0468436
