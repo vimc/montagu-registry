@@ -92,7 +92,7 @@ def registry_cleanup(dry_run=True, n_delete=10, d=None, v=None):
             "--keep-tags", "master", "latest"]
     if dry_run:
         args.append("--dry-run")
-    x = d.containers.run(img, args, remove=True, detach=False)
+    x = d.containers.run(img, args, remove=True, detach=True)
     x.attach(stdout = True, stderr = True)
 
 def root_path(p):
