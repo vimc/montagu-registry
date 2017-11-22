@@ -1,3 +1,4 @@
 certs/*.key
 certs/domain.crt
 auth
+__pycache__

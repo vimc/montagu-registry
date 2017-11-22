@@ -5,16 +5,31 @@
 1. [vault](https://github.com/vimc/montagu-vault) must be running and unsealed.  This will run at https://support.montagu.dide.ic.ac.uk:8200 - we'll fetch the SSL certificate's key from here.
 2. The `registry_data` volume must exist.  The [restore script](https://github.com/vimc/montagu-backup) will create this for you.  Alternatively if you are starting completely fresh (e.g., testing) then just run `docker volume create registry_data`
 3. A password is required to be stored in vault at `/secret/registry/vimc` (do this with `./generate_registry_password.sh`)
+4. Some Python packages; install with `pip3 install --user -r requirements.txt`
 
 ## Deployment:
 
 From within this directory, run:
 
 ```
-./run.sh
+./montagu-registry start
 ```
 
 The script will pull the ssl certificate and password from the vault.  If you update either then relaunch the registry and the changes will take effect.
+
+## Garbage collection:
+
+This will take down the registry while it runs, then restore the registry
+
+```
+./montagu-registry gc
+```
+
+## Stopping the registry:
+
+```
+./montagu-registry stop
+```
 
 ## Login
 
