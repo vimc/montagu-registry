@@ -5,6 +5,7 @@ Usage:
   montagu-registry start
   montagu-registry stop
   montagu-registry gc
+  montagu-registry cleanup
 """
 
 import docker
@@ -75,6 +76,24 @@ def registry_gc(d=None):
     finally:
         if restart:
             registry_start(d)
+
+def registry_cleanup(dry_run=True, n_delete=10, d=None, v=None):
+    if not d:
+        d = docker.client.from_env()
+    if not v:
+        v = vault_login()
+    if not registry_running(d):
+        raise Exception("Registry must be running to do cleanup")
+    img = "anoxis/registry-cli"
+    password = v.read("secret/registry/vimc")['data']['password']
+    auth = '"{}":"{}"'.format(registry_user, password)
+    url = "https://{}:{}".format(registry_domain, registry_port)
+    args = ["-l", auth, "-r", url, "--delete", "--num", str(n_delete),
+            "--keep-tags", "master", "latest"]
+    if dry_run:
+        args.append("--dry-run")
+    x = d.containers.run(img, args, remove=True, detach=False)
+    x.attach(stdout = True, stderr = True)
 
 def root_path(p):
     return '/' + p
@@ -169,3 +188,5 @@ if __name__ == "__main__":
         registry_stop()
     elif args['gc']:
         registry_gc()
+    elif args['cleanup']:
+        registry_cleanup(dry_run=True)

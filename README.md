@@ -1,5 +1,28 @@
 # montagu-registry
 
+## Login
+
+Login has no expiry, so just needs running once
+
+```
+docker login -u vimc docker.montagu.dide.ic.ac.uk:5000
+```
+
+With the password from
+
+```
+vault read -field=password /secret/registry/vimc
+```
+
+which can be done all in one with
+
+```
+vault read -field=password /secret/registry/vimc | \
+    docker login -u vimc --password-stdin docker.montagu.dide.ic.ac.uk:5000
+```
+
+### Deployment and maintenance
+
 ## Requirements:
 
 1. [vault](https://github.com/vimc/montagu-vault) must be running and unsealed.  This will run at https://support.montagu.dide.ic.ac.uk:8200 - we'll fetch the SSL certificate's key from here.
@@ -31,25 +54,10 @@ This will take down the registry while it runs, then restore the registry
 ./montagu-registry stop
 ```
 
-## Login
-
-Login has no expiry, so just needs running once
+## Cleanup
 
 ```
-docker login -u vimc docker.montagu.dide.ic.ac.uk:5000
-```
-
-With the password from
-
-```
-vault read -field=password /secret/registry/vimc
-```
-
-which can be done all in one with
-
-```
-vault read -field=password /secret/registry/vimc | \
-    docker login -u vimc --password-stdin docker.montagu.dide.ic.ac.uk:5000
+./montagu-registry cleanup
 ```
 
 ## Did it work?
