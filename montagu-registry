@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate montagu database passwords
+Interact with the montagu registry
 Usage:
   montagu-registry start
   montagu-registry stop
