@@ -60,6 +60,8 @@ This will take down the registry while it runs, then restore the registry
 ./montagu-registry cleanup
 ```
 
+Note that cleanup does not automatically do garbage collection (because cleanup does not require taking the registry offline but garbage collection does).  According to some reports the registry will automatically garbage collect (e.g., overnight) but I'm not sure this will definitely happen.
+
 ## Did it work?
 
 ```
