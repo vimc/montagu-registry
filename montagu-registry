@@ -95,6 +95,7 @@ def registry_cleanup(dry_run=True, n_delete=10, d=None, v=None):
     container = d.containers.run(img, args, detach=True)
     for line in container.logs(stream=True):
         print(line.decode("utf-8"), end="")
+    container.remove()
 
 def root_path(p):
     return '/' + p
