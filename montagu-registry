@@ -1,0 +1,193 @@
+#!/usr/bin/env python3
+"""
+Interact with the montagu registry
+Usage:
+  montagu-registry start
+  montagu-registry stop
+  montagu-registry gc
+  montagu-registry cleanup [--dry-run]
+"""
+
+import docker
+import hvac
+import os.path
+import os
+from docopt import docopt
+from getpass import getpass
+
+# These are customisable
+registry_port = 5000
+registry_container_name = "registry"
+registry_volume_name = "registry_data"
+
+registry_domain = "docker.montagu.dide.ic.ac.uk"
+registry_user = "vimc"
+vault_addr = "https://support.montagu.dide.ic.ac.uk:8200"
+dir_auth = "auth"
+dir_certs = "certs"
+path_crt = dir_certs + "/domain.crt"
+path_key = dir_certs + "/domain.key"
+path_crt_intermediate = dir_certs + "/QuoVadisOVIntermediateCertificate.crt"
+path_auth = dir_auth + "/htpasswd"
+
+def registry_start(d=None):
+    if not d:
+        d = docker.client.from_env()
+    if registry_running(d):
+        print("Registry already running")
+        return False
+    if not volume_exists(d):
+        raise Exception("The docker volume {} must exist".format(
+            registry_volume_name))
+    prepare(d, vault_login())
+    ports = {5000: registry_port}
+    restart = {'Name': 'always'}
+    print("Starting registry")
+    d.containers.run('registry:2', detach=True, restart_policy=restart,
+                     ports=ports, volumes=registry_volumes(),
+                     name=registry_container_name,
+                     environment=registry_environment())
+
+def registry_stop(d=None, remove=True):
+    if not d:
+        d = docker.client.from_env()
+    if registry_running(d):
+        print("Stopping registry")
+        x = d.containers.get(registry_container_name)
+        x.stop()
+        if remove:
+            print("Removing registy container (data is still in volume)")
+            x.remove()
+        return True
+    else:
+        print("Registry not running")
+        return False
+
+def registry_gc(d=None):
+    if not d:
+        d = docker.client.from_env()
+    restart = registry_stop(d, True)
+    try:
+        print("Garbage collecting registry")
+        args = ['bin/registry', 'garbage-collect',
+                '/etc/docker/registry/config.yml']
+        d.containers.run("registry:2", args, volumes=registry_volumes(),
+                         remove=True, name=registry_container_name)
+    finally:
+        if restart:
+            registry_start(d)
+
+def registry_cleanup(dry_run=True, n_delete=10, d=None, v=None):
+    if not d:
+        d = docker.client.from_env()
+    if not v:
+        v = vault_login()
+    if not registry_running(d):
+        raise Exception("Registry must be running to do cleanup")
+    img = "anoxis/registry-cli"
+    password = v.read("secret/registry/vimc")['data']['password']
+    auth = '"{}":"{}"'.format(registry_user, password)
+    url = "https://{}:{}".format(registry_domain, registry_port)
+    args = ["-l", auth, "-r", url, "--delete", "--num", str(n_delete),
+            "--keep-tags", "master", "latest"]
+    if dry_run:
+        args.append("--dry-run")
+    container = d.containers.run(img, args, detach=True)
+    for line in container.logs(stream=True):
+        print(line.decode("utf-8"), end="")
+    container.remove()
+
+def root_path(p):
+    return '/' + p
+
+def registry_volumes():
+    return {
+        os.path.abspath(dir_auth): {'bind': root_path(dir_auth)},
+        os.path.abspath(dir_certs): {'bind': root_path(dir_certs)},
+        registry_volume_name: {'bind': '/var/lib/registry'}
+    }
+
+def registry_environment():
+    return {
+        'REGISTRY_HTTP_TLS_CERTIFICATE': root_path(path_crt),
+        'REGISTRY_HTTP_TLS_KEY': root_path(path_key),
+        'REGISTRY_AUTH': 'htpasswd',
+        'REGISTRY_AUTH_HTPASSWD_REALM': 'Registry Realm',
+        'REGISTRY_AUTH_HTPASSWD_PATH': root_path(path_auth),
+        'REGISTRY_STORAGE_DELETE_ENABLED': 'true'
+    }
+
+def registry_running(d):
+    try:
+        return d.containers.get(registry_container_name).status == "running"
+    except docker.errors.NotFound:
+        return False
+
+def volume_exists(d):
+    try:
+        d.volumes.get(registry_volume_name)
+        return True
+    except docker.errors.NotFound:
+        return False
+
+def prepare(docker, vault):
+    prepare_auth(docker, vault)
+    prepare_ssl(docker, vault)
+
+def prepare_auth(docker, vault):
+    print("Reading registry password")
+    pw = vault.read("secret/registry/vimc")['data']['password']
+    htpasswd = docker.containers.run("registry:2", ["-Bbn", registry_user, pw],
+                                     remove=True, entrypoint="htpasswd")
+    mkdir(dir_auth)
+    write_file(htpasswd.decode("utf-8"), path_auth)
+    os.chmod(path_auth, 0o600)
+
+def prepare_ssl(docker, vault):
+    print("Reading ssl key")
+    mkdir(dir_certs)
+    crt = read_file("{}/{}.crt".format(dir_certs, registry_domain)) + \
+          read_file(path_crt_intermediate)
+    write_file(vault.read("secret/ssl/registry")['data']['key'], path_key)
+    os.chmod(path_key, 0o600)
+    write_file(crt, path_crt)
+
+def vault_login():
+    path_token = os.path.expanduser("~/.vault-token")
+    cl = hvac.Client(vault_addr)
+
+    if os.path.exists(path_token):
+        print("vault: using user token")
+        cl.token = read_file(path_token)
+    else:
+        print("vault: logging in with github")
+        try:
+            token = os.environ['VAULT_AUTH_GITHUB_TOKEN']
+        except KeyError:
+            token = getpass("Enter your Vault GitHub personal access token: ")
+        cl.auth_github(token)
+    return cl
+
+# Some utilities
+def mkdir(path):
+    if not os.path.exists(path):
+        os.mkdir(path)
+
+def read_file(filename):
+    with open(filename, 'r') as f:
+        return f.read()
+
+def write_file(txt, filename):
+    with open(filename, 'w') as f:
+        f.write(txt)
+
+if __name__ == "__main__":
+    args = docopt(__doc__)
+    if args['start']:
+        registry_start()
+    elif args['stop']:
+        registry_stop()
+    elif args['gc']:
+        registry_gc()
+    elif args['cleanup']:
+        registry_cleanup(dry_run=args["--dry-run"])
