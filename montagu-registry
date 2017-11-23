@@ -16,9 +16,9 @@ from docopt import docopt
 from getpass import getpass
 
 # These are customisable
-registry_port = 5001
-registry_container_name = "registry2"
-registry_volume_name = "registry_data2"
+registry_port = 5000
+registry_container_name = "registry"
+registry_volume_name = "registry_data"
 
 registry_domain = "docker.montagu.dide.ic.ac.uk"
 registry_user = "vimc"
