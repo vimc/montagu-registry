@@ -5,7 +5,7 @@ Usage:
   montagu-registry start
   montagu-registry stop
   montagu-registry gc
-  montagu-registry cleanup
+  montagu-registry cleanup [--dry-run]
 """
 
 import docker
@@ -190,4 +190,4 @@ if __name__ == "__main__":
     elif args['gc']:
         registry_gc()
     elif args['cleanup']:
-        registry_cleanup(dry_run=True)
+        registry_cleanup(dry_run=args["--dry-run"])
