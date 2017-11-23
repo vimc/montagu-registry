@@ -140,8 +140,8 @@ def prepare_auth(docker, vault):
     htpasswd = docker.containers.run("registry:2", ["-Bbn", registry_user, pw],
                                      remove=True, entrypoint="htpasswd")
     mkdir(dir_auth)
-    with open(path_auth, 'w') as f:
-        f.write(htpasswd.decode("utf-8"))
+    write_file(htpasswd.decode("utf-8"), path_auth)
+    os.chmod(path_auth, 0o600)
 
 def prepare_ssl(docker, vault):
     print("Reading ssl key")
@@ -149,8 +149,8 @@ def prepare_ssl(docker, vault):
     crt = read_file("{}/{}.crt".format(dir_certs, registry_domain)) + \
           read_file(path_crt_intermediate)
     write_file(vault.read("secret/ssl/registry")['data']['key'], path_key)
+    os.chmod(path_key, 0o600)
     write_file(crt, path_crt)
-
 
 def vault_login():
     path_token = os.path.expanduser("~/.vault-token")
@@ -158,8 +158,7 @@ def vault_login():
 
     if os.path.exists(path_token):
         print("vault: using user token")
-        with open(path_token) as f:
-            cl.token = f.read()
+        cl.token = read_file(path_token)
     else:
         print("vault: logging in with github")
         try:
