@@ -56,7 +56,7 @@ def registry_stop(d=None, remove=True):
         x = d.containers.get(registry_container_name)
         x.stop()
         if remove:
-            print("Removing registy container")
+            print("Removing registy container (data is still in volume)")
             x.remove()
         return True
     else:
