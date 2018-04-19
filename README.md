@@ -62,6 +62,8 @@ This will take down the registry while it runs, then restore the registry
 
 Note that cleanup does not automatically do garbage collection (because cleanup does not require taking the registry offline but garbage collection does).  According to some reports the registry will automatically garbage collect (e.g., overnight) but I'm not sure this will definitely happen.
 
+This uses https://github.com/andrey-pohilko/registry-cli to delete images, keeping the latest 10 tags for each images, as well as always keeping the `master` and `latest` tagged images, if they exist.
+
 ## Did it work?
 
 ```
